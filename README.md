@@ -12,7 +12,7 @@
 
 ## Overview
 
-**Ultimate Discord Bot** is a powerful and flexible bot built using the [Discord.js](https://discord.js.org/) library. It's designed to enhance your Discord server with a wide range of features, from server moderation tools to fun and engaging commands for your community. The bot integrates external APIs for jokes, historical events, trivia, and more, making it a versatile tool for any server.
+**Ultimate Discord Bot** is a powerful and flexible bot built using the [Discord.js](https://discord.js.org/) library. It's designed to enhance your Discord server with a wide range of features, from server moderation tools to fun and engaging commands for your community. The bot integrates external APIs for jokes, historical events, trivia, weather, and more, making it a versatile tool for any server.
 
 ## Features
 
@@ -48,6 +48,12 @@
 - **`timer [seconds]`**: Set a timer that notifies you when time is up.
 - **`crypto [coin]`**: Check the current USD price of a cryptocurrency (default: bitcoin).
 - **`avatar [@user]`**: Display the avatar of a mentioned user or your own.
+- **`cat`**: Get a random cat image.
+- **`dog`**: Get a random dog image.
+- **`meme`**: Fetch a random meme.
+- **`weather [location]`**: Get current weather information for a specified location.
+- **`trivia`**: Receive a random trivia question with multiple choice options.
+- **`reminder [seconds] [message]`**: Set a personal reminder; you'll receive a DM after the specified time.
 
 ## Prerequisites
 

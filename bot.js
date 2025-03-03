@@ -333,11 +333,16 @@ const commands = {
 **${prefix}timer [seconds]** - Set a timer.
 **${prefix}crypto [coin]** - Get the current price of a cryptocurrency (default: bitcoin).
 **${prefix}avatar [@user]** - Get the avatar of a user.
+**${prefix}cat** - Get a random cat image.
+**${prefix}dog** - Get a random dog image.
+**${prefix}meme** - Fetch a random meme.
+**${prefix}weather [location]** - Get current weather information for a location.
+**${prefix}trivia** - Get a random trivia question.
+**${prefix}reminder [seconds] [message]** - Set a personal reminder.
 `);
     await message.channel.send({ embeds: [helpEmbed] });
   },
 
-  // New Feature: Inspirational Quote
   quote: async (message) => {
     try {
       const response = await axios.get('https://zenquotes.io/api/random');
@@ -357,7 +362,6 @@ const commands = {
     }
   },
 
-  // New Feature: Timer Command
   timer: async (message, args) => {
     const seconds = parseInt(args[0], 10);
     if (isNaN(seconds) || seconds <= 0) {
@@ -369,7 +373,6 @@ const commands = {
     }, seconds * 1000);
   },
 
-  // New Feature: Cryptocurrency Price Checker
   crypto: async (message, args) => {
     const coin = args[0] ? args[0].toLowerCase() : 'bitcoin';
     try {
@@ -389,7 +392,6 @@ const commands = {
     }
   },
 
-  // New Feature: Avatar Command
   avatar: async (message) => {
     const target = message.mentions.users.first() || message.author;
     const avatarEmbed = new EmbedBuilder()
@@ -397,6 +399,112 @@ const commands = {
       .setTitle(`${target.username}'s Avatar`)
       .setImage(target.displayAvatarURL({ dynamic: true, size: 512 }));
     await message.channel.send({ embeds: [avatarEmbed] });
+  },
+
+  // New Feature: Random Cat Image
+  cat: async (message) => {
+    try {
+      const response = await axios.get('https://aws.random.cat/meow');
+      const imageUrl = response.data.file;
+      const catEmbed = new EmbedBuilder()
+        .setColor(0xFFA07A)
+        .setTitle('Random Cat')
+        .setImage(imageUrl);
+      await message.channel.send({ embeds: [catEmbed] });
+    } catch (error) {
+      handleError(message, 'Failed to fetch a cat image.');
+    }
+  },
+
+  // New Feature: Random Dog Image
+  dog: async (message) => {
+    try {
+      const response = await axios.get('https://dog.ceo/api/breeds/image/random');
+      const imageUrl = response.data.message;
+      const dogEmbed = new EmbedBuilder()
+        .setColor(0x87CEFA)
+        .setTitle('Random Dog')
+        .setImage(imageUrl);
+      await message.channel.send({ embeds: [dogEmbed] });
+    } catch (error) {
+      handleError(message, 'Failed to fetch a dog image.');
+    }
+  },
+
+  // New Feature: Random Meme
+  meme: async (message) => {
+    try {
+      const response = await axios.get('https://meme-api.com/gimme');
+      const memeData = response.data;
+      const memeEmbed = new EmbedBuilder()
+        .setColor(0xFF4500)
+        .setTitle(memeData.title)
+        .setImage(memeData.url)
+        .setFooter({ text: `From: ${memeData.subreddit}` });
+      await message.channel.send({ embeds: [memeEmbed] });
+    } catch (error) {
+      handleError(message, 'Failed to fetch a meme.');
+    }
+  },
+
+  // New Feature: Weather Information
+  weather: async (message, args) => {
+    if (args.length === 0) return handleError(message, 'Please provide a location for weather information.');
+    const location = args.join(' ');
+    try {
+      const response = await axios.get(`http://wttr.in/${encodeURIComponent(location)}?format=j1`);
+      const data = response.data;
+      const current = data.current_condition[0];
+      const weatherEmbed = new EmbedBuilder()
+        .setColor(0x1E90FF)
+        .setTitle(`Weather in ${location}`)
+        .addFields(
+          { name: 'Temperature', value: `${current.temp_C}°C`, inline: true },
+          { name: 'Feels Like', value: `${current.FeelsLikeC}°C`, inline: true },
+          { name: 'Description', value: current.weatherDesc[0].value, inline: false }
+        );
+      await message.channel.send({ embeds: [weatherEmbed] });
+    } catch (error) {
+      handleError(message, 'Failed to fetch weather data.');
+    }
+  },
+
+  // New Feature: Trivia Question
+  trivia: async (message) => {
+    try {
+      const response = await axios.get('https://opentdb.com/api.php?amount=1&type=multiple');
+      const triviaData = response.data.results[0];
+      const question = triviaData.question;
+      const correctAnswer = triviaData.correct_answer;
+      const incorrectAnswers = triviaData.incorrect_answers;
+      // Shuffle answers
+      const answers = [...incorrectAnswers, correctAnswer].sort(() => Math.random() - 0.5);
+      const triviaEmbed = new EmbedBuilder()
+        .setColor(0x32CD32)
+        .setTitle('Trivia Question')
+        .setDescription(question)
+        .addFields(
+          { name: 'Options', value: answers.join('\n') },
+          { name: 'Note', value: 'The correct answer is hidden!' }
+        );
+      await message.channel.send({ embeds: [triviaEmbed] });
+    } catch (error) {
+      handleError(message, 'Failed to fetch a trivia question.');
+    }
+  },
+
+  // New Feature: Reminder Command
+  reminder: async (message, args) => {
+    const seconds = parseInt(args[0], 10);
+    if (isNaN(seconds) || seconds <= 0) {
+      return handleError(message, 'Please provide a valid number of seconds for the reminder.');
+    }
+    const reminderMessage = args.slice(1).join(' ');
+    if (!reminderMessage) return handleError(message, 'Please provide a reminder message.');
+    await message.channel.send(`⏰ I will remind you in ${seconds} seconds.`);
+    setTimeout(() => {
+      message.author.send(`Reminder: ${reminderMessage}`);
+    }, seconds * 1000);
   }
 };
 
