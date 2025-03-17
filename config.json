@@ -1,13 +1,15 @@
 {
-    "token": "YOUR_BOT_TOKEN",
-    "prefix": "!",
-    "logging": {
-      "enabled": true,
-      "logFilePath": "./bot.log"
-    },
-    "commands": {
-      "enableClearCommand": true,
-      "enableJokeCommand": true
-    }
+  "token": "YOUR_BOT_TOKEN",
+  "prefix": "!",
+  "logging": {
+    "enabled": true,
+    "logFilePath": "./bot.log"
+  },
+  "commands": {
+    "enableClearCommand": true,
+    "enableJokeCommand": true
+  },
+  "autoModeration": {
+    "bannedWords": ["badword1", "badword2", "nastyword"]
   }
-  
+}

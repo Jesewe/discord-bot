@@ -12,11 +12,12 @@
 
 ## Overview
 
-**Ultimate Discord Bot** is a powerful and flexible bot built using the [Discord.js](https://discord.js.org/) library. It's designed to enhance your Discord server with a wide range of features, from server moderation tools to fun and engaging commands for your community. The bot integrates external APIs for jokes, historical events, trivia, weather, and more, making it a versatile tool for any server.
+**Ultimate Discord Bot** is a powerful and flexible bot built using the [Discord.js](https://discord.js.org/) library. It's designed to enhance your Discord server with a wide range of features—from server moderation tools to fun and engaging commands for your community. The bot integrates external APIs for jokes, historical events, trivia, weather, and more, making it a versatile tool for any server.
 
 ## Features
 
 ### General Commands
+
 - **`roll [min-max]`**: Roll a random number within a given range (default: 1-100).
 - **`joke`**: Fetch a random joke from an external API.
 - **`who [name]`**: Generate a random adjective for the given name.
@@ -24,21 +25,24 @@
 - **`8ball`**: Ask a yes/no question and get an answer.
 - **`ping`**: Check the bot's response time.
 - **`words [text]`**: Count the number of words in the provided text.
-- **`clear [number]`**: Delete up to 100 recent messages in the current channel.
+- **`customembed Title; Description; [optional hex color]`**: Create a custom embed message.
 
 ### Moderation Commands
+
 - **`kick [@user]`**: Kick a user from the server.
 - **`ban [@user]`**: Ban a user from the server.
 - **`mute [@user]`**: Mute a user in voice channels.
 - **`unmute [@user]`**: Unmute a user in voice channels.
 
 ### Server Information Commands
+
 - **`userinfo [@user]`**: Get details about a user (username, tag, ID, etc.).
 - **`serverinfo`**: Display server information (name, member count, etc.).
 - **`random_player`**: Select a random member from the server.
 - **`botinfo`**: List all bots currently in the server.
 
 ### Fun & Miscellaneous Commands
+
 - **`uptime`**: See how long the bot has been running.
 - **`today`**: Discover a historical event that occurred on today's date.
 - **`fact`**: Get a random fun fact from an external API.
@@ -55,38 +59,61 @@
 - **`trivia`**: Receive a random trivia question with multiple choice options.
 - **`reminder [seconds] [message]`**: Set a personal reminder; you'll receive a DM after the specified time.
 
+### Auto Moderation
+
+In addition to the above commands, **Ultimate Discord Bot** includes an **Auto Moderation** feature that runs in the background. This feature automatically monitors all incoming messages for banned words. The list of banned words is loaded from the bot's configuration file (`config.json`) under the `"autoModeration"` section. When a message contains one of these words, the bot will delete the message and notify the user.
+
+For example, your `config.json` might include:
+
+```json
+{
+  "token": "YOUR_BOT_TOKEN",
+  "prefix": "!",
+  "logging": {
+    "enabled": true,
+    "logFilePath": "./bot.log"
+  },
+  "commands": {
+    "enableClearCommand": true,
+    "enableJokeCommand": true
+  },
+  "autoModeration": {
+    "bannedWords": ["badword1", "badword2", "nastyword"]
+  }
+}
+```
+
 ## Prerequisites
 
 Before running the bot, ensure you have the following:
+
 - A [Discord developer account](https://discord.com/developers/applications) and a bot token.
 - Node.js (v16.6.0 or higher) installed on your machine.
 
 ## Installation
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/Jesewe/discord-bot.git
    ```
 
 2. Navigate to the project directory:
+
    ```bash
    cd discord-bot
    ```
 
 3. Install the required dependencies:
+
    ```bash
    npm install
    ```
 
-4. Create a `config.json` file in the project root and add your bot token and prefix:
-   ```json
-   {
-       "token": "YOUR_BOT_TOKEN",
-       "prefix": "!"
-   }
-   ```
+4. Create a `config.json` file in the project root and add your bot token, prefix, and other configuration as shown above.
 
 5. Start the bot:
+
    ```bash
    node bot.js
    ```
@@ -99,18 +126,22 @@ Before running the bot, ensure you have the following:
 
 ## Logging
 
-The bot logs each command execution along with timestamps for easy monitoring. By default, logs are written to both the console and an optional log file if logging is enabled in the `config.json`. Example log format:
+The bot logs each command execution along with timestamps for easy monitoring. By default, logs are written to both the console and an optional log file if logging is enabled in the `config.json`.
+
+Example log format:
+
 ```
 [MM/DD/YYYY, HH:MM:SS AM/PM] Command executed: !roll
 ```
 
 To enable file logging, configure the `logFilePath` in `config.json`:
+
 ```json
 {
-    "logging": {
-        "enabled": true,
-        "logFilePath": "./bot.log"
-    }
+  "logging": {
+    "enabled": true,
+    "logFilePath": "./bot.log"
+  }
 }
 ```
 

@@ -1,9 +1,4 @@
-const { 
-  Client, 
-  GatewayIntentBits, 
-  EmbedBuilder, 
-  PermissionsBitField 
-} = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder, PermissionsBitField } = require('discord.js');
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
@@ -21,6 +16,7 @@ let loggingEnabled = false;
 let logFilePath = './bot.log';
 let enableClearCommand = true;
 let enableJokeCommand = true;
+let bannedWords = [];
 
 try {
   const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
@@ -30,6 +26,7 @@ try {
   logFilePath = config.logging?.logFilePath || logFilePath;
   enableClearCommand = config.commands?.enableClearCommand !== false;
   enableJokeCommand = config.commands?.enableJokeCommand !== false;
+  bannedWords = config.autoModeration?.bannedWords || [];
 } catch (error) {
   console.error('Failed to load configuration:', error);
   process.exit(1);
@@ -62,7 +59,7 @@ const commands = {
       const range = args[0].split('-');
       min = parseInt(range[0], 10) || min;
       max = parseInt(range[1], 10) || max;
-      if (min > max) [min, max] = [max, min]; // Swap if necessary
+      if (min > max) [min, max] = [max, min];
     }
     const result = Math.floor(Math.random() * (max - min + 1)) + min;
     const rollEmbed = new EmbedBuilder()
@@ -331,8 +328,9 @@ const commands = {
 **${prefix}ascii [text]** - Convert text to ASCII art.
 **${prefix}quote** - Get an inspirational quote.
 **${prefix}timer [seconds]** - Set a timer.
-**${prefix}crypto [coin]** - Get the current price of a cryptocurrency (default: bitcoin).
+**${prefix}crypto [coin]** - Get the current price of a cryptocurrency.
 **${prefix}avatar [@user]** - Get the avatar of a user.
+**${prefix}customembed Title; Description; [optional hex color]** - Create a custom embed message.
 **${prefix}cat** - Get a random cat image.
 **${prefix}dog** - Get a random dog image.
 **${prefix}meme** - Fetch a random meme.
@@ -385,7 +383,7 @@ const commands = {
       const cryptoEmbed = new EmbedBuilder()
         .setColor(0xFFD700)
         .setTitle(`Crypto Price: ${coin.charAt(0).toUpperCase() + coin.slice(1)}`)
-        .setDescription(`Current price: $${price} USD`);
+        .setDescription(`Current price: ${price} USD`);
       await message.channel.send({ embeds: [cryptoEmbed] });
     } catch (error) {
       handleError(message, 'Failed to fetch cryptocurrency data.');
@@ -401,7 +399,32 @@ const commands = {
     await message.channel.send({ embeds: [avatarEmbed] });
   },
 
-  // New Feature: Random Cat Image
+  // New Feature: Custom Embed Message
+  customembed: async (message, args) => {
+    // Expecting input in the format: Title; Description; [optional hex color]
+    if (args.length === 0) {
+      return handleError(message, 'Please provide your embed content in the format: `Title; Description; [optional hex color]`.');
+    }
+    const input = args.join(' ');
+    const parts = input.split(';');
+    if (parts.length < 2) {
+      return handleError(message, 'Please separate the title and description with a semicolon.');
+    }
+    const title = parts[0].trim();
+    const description = parts[1].trim();
+    // Default color (green) if not provided
+    let color = 0x00FF00;
+    if (parts[2]) {
+      // Remove '#' if present and parse the hex color
+      color = parseInt(parts[2].trim().replace(/^#/, ''), 16) || color;
+    }
+    const embed = new EmbedBuilder()
+      .setTitle(title)
+      .setDescription(description)
+      .setColor(color);
+    await message.channel.send({ embeds: [embed] });
+  },
+
   cat: async (message) => {
     try {
       const response = await axios.get('https://aws.random.cat/meow');
@@ -416,7 +439,6 @@ const commands = {
     }
   },
 
-  // New Feature: Random Dog Image
   dog: async (message) => {
     try {
       const response = await axios.get('https://dog.ceo/api/breeds/image/random');
@@ -431,7 +453,6 @@ const commands = {
     }
   },
 
-  // New Feature: Random Meme
   meme: async (message) => {
     try {
       const response = await axios.get('https://meme-api.com/gimme');
@@ -447,7 +468,6 @@ const commands = {
     }
   },
 
-  // New Feature: Weather Information
   weather: async (message, args) => {
     if (args.length === 0) return handleError(message, 'Please provide a location for weather information.');
     const location = args.join(' ');
@@ -469,7 +489,6 @@ const commands = {
     }
   },
 
-  // New Feature: Trivia Question
   trivia: async (message) => {
     try {
       const response = await axios.get('https://opentdb.com/api.php?amount=1&type=multiple');
@@ -493,7 +512,6 @@ const commands = {
     }
   },
 
-  // New Feature: Reminder Command
   reminder: async (message, args) => {
     const seconds = parseInt(args[0], 10);
     if (isNaN(seconds) || seconds <= 0) {
@@ -507,6 +525,24 @@ const commands = {
     }, seconds * 1000);
   }
 };
+
+// Auto Moderation: Delete messages containing banned words from config
+client.on('messageCreate', async (message) => {
+  if (message.author.bot) return;
+  const messageContent = message.content.toLowerCase();
+  for (const bannedWord of bannedWords) {
+    if (messageContent.includes(bannedWord.toLowerCase())) {
+      try {
+        await message.delete();
+        await message.channel.send(`${message.author}, your message contained inappropriate language and was removed.`);
+        logWithTime(`Auto moderation: Deleted message from ${message.author.tag} for banned word: ${bannedWord}`);
+      } catch (error) {
+        console.error(`Error deleting message from ${message.author.tag}:`, error);
+      }
+      return; // Stop further processing for this message
+    }
+  }
+});
 
 // When the bot is ready
 client.once('ready', () => {
