@@ -17,6 +17,7 @@ let logFilePath = './bot.log';
 let enableClearCommand = true;
 let enableJokeCommand = true;
 let bannedWords = [];
+let bannedWordsPattern;
 
 try {
   const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
@@ -27,6 +28,9 @@ try {
   enableClearCommand = config.commands?.enableClearCommand !== false;
   enableJokeCommand = config.commands?.enableJokeCommand !== false;
   bannedWords = config.autoModeration?.bannedWords || [];
+  if (bannedWords.length > 0) {
+    bannedWordsPattern = new RegExp('\\b(' + bannedWords.join('|') + ')\\b', 'i');
+  }
 } catch (error) {
   console.error('Failed to load configuration:', error);
   process.exit(1);
@@ -101,6 +105,28 @@ const commands = {
 
   userinfo: async (message) => {
     const target = message.mentions.users.first() || message.author;
+    if (!message.guild) {
+      const userInfoEmbed = new EmbedBuilder()
+        .setColor(0x0099FF)
+        .setTitle('User Information')
+        .addFields(
+          { name: 'Username', value: target.username, inline: true },
+          { name: 'Tag', value: target.tag, inline: true },
+          { name: 'User ID', value: target.id, inline: false },
+          { name: 'Joined Discord', value: target.createdAt.toDateString(), inline: false },
+          { name: 'Note', value: 'Additional server-specific info unavailable in DMs.', inline: false }
+        )
+        .setThumbnail(target.displayAvatarURL());
+      return await message.channel.send({ embeds: [userInfoEmbed] });
+    }
+    // Fetch member data for guild context
+    let member;
+    try {
+      member = await message.guild.members.fetch(target.id);
+    } catch (error) {
+      logWithTime(`Error fetching member data for ${target.tag}: ${error}`);
+      return handleError(message, 'Failed to fetch member data.');
+    }
     const userInfoEmbed = new EmbedBuilder()
       .setColor(0x0099FF)
       .setTitle('User Information')
@@ -108,7 +134,9 @@ const commands = {
         { name: 'Username', value: target.username, inline: true },
         { name: 'Tag', value: target.tag, inline: true },
         { name: 'User ID', value: target.id, inline: false },
-        { name: 'Joined Discord', value: target.createdAt.toDateString(), inline: false }
+        { name: 'Joined Discord', value: target.createdAt.toDateString(), inline: false },
+        { name: 'Joined Server', value: member.joinedAt.toDateString(), inline: false },
+        { name: 'Roles', value: member.roles.cache.map(role => role.name).join(', ') || 'None', inline: false }
       )
       .setThumbnail(target.displayAvatarURL());
     await message.channel.send({ embeds: [userInfoEmbed] });
@@ -337,6 +365,7 @@ const commands = {
 **${prefix}weather [location]** - Get current weather information for a location.
 **${prefix}trivia** - Get a random trivia question.
 **${prefix}reminder [seconds] [message]** - Set a personal reminder.
+**${prefix}poll Question | Option1 | Option2 | ...** - Create a poll with up to 10 options.
 `);
     await message.channel.send({ embeds: [helpEmbed] });
   },
@@ -469,7 +498,7 @@ const commands = {
   },
 
   weather: async (message, args) => {
-    if (args.length === 0) return handleError(message, 'Please provide a location for weather information.');
+    if (args.length === Zero) return handleError(message, 'Please provide a location for weather information.');
     const location = args.join(' ');
     try {
       const response = await axios.get(`http://wttr.in/${encodeURIComponent(location)}?format=j1`);
@@ -523,6 +552,33 @@ const commands = {
     setTimeout(() => {
       message.author.send(`Reminder: ${reminderMessage}`);
     }, seconds * 1000);
+  },
+
+  // New Command: poll
+  poll: async (message, args) => {
+    const fullArgs = message.content.slice(prefix.length + 'poll'.length).trim();
+    const parts = fullArgs.split('|').map(part => part.trim());
+    if (parts.length < 2) {
+      return handleError(message, 'Usage: !poll Question | Option1 | Option2 | ...');
+    }
+    const question = parts[0];
+    const options = parts.slice(1);
+    if (options.length > 10) {
+      return handleError(message, 'Maximum of 10 options allowed.');
+    }
+    const pollEmbed = new EmbedBuilder()
+      .setColor(0xFFD700)
+      .setTitle('Poll')
+      .setDescription(question);
+    options.forEach((option, index) => {
+      const emoji = String.fromCodePoint(0x1F1E6 + index); // 🇦 to 🇿
+      pollEmbed.addFields({ name: emoji, value: option, inline: true });
+    });
+    const pollMessage = await message.channel.send({ embeds: [pollEmbed] });
+    for (let i = 0; i < options.length; i++) {
+      const emoji = String.fromCodePoint(0x1F1E6 + i);
+      await pollMessage.react(emoji);
+    }
   }
 };
 
@@ -530,17 +586,16 @@ const commands = {
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
   const messageContent = message.content.toLowerCase();
-  for (const bannedWord of bannedWords) {
-    if (messageContent.includes(bannedWord.toLowerCase())) {
-      try {
-        await message.delete();
-        await message.channel.send(`${message.author}, your message contained inappropriate language and was removed.`);
-        logWithTime(`Auto moderation: Deleted message from ${message.author.tag} for banned word: ${bannedWord}`);
-      } catch (error) {
-        console.error(`Error deleting message from ${message.author.tag}:`, error);
-      }
-      return; // Stop further processing for this message
+  if (bannedWordsPattern && bannedWordsPattern.test(messageContent)) {
+    const matchedWord = messageContent.match(bannedWordsPattern)[0];
+    try {
+      await message.delete();
+      await message.channel.send(`${message.author}, your message contained inappropriate language ("${matchedWord}") and was removed.`);
+      logWithTime(`Auto moderation: Deleted message from ${message.author.tag} for banned word: ${matchedWord}`);
+    } catch (error) {
+      console.error(`Error deleting message from ${message.author.tag}:`, error);
     }
+    return;
   }
 });
 
@@ -549,7 +604,8 @@ client.once('ready', () => {
   logWithTime(`Bot is online! Logged in as: ${client.user.tag}, prefix: ${prefix}`);
 });
 
-// Command Handling
+// Command Handling with Cooldowns
+const commandCooldowns = new Map();
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
   if (!message.content.toLowerCase().startsWith(prefix.toLowerCase())) return;
@@ -564,8 +620,23 @@ client.on('messageCreate', async (message) => {
     return handleError(message, `Unknown command: ${commandName}. Use \`${prefix}help\` to see available commands.`);
   }
 
+  // Cooldown check
+  const cooldownTime = 5000; // 5 seconds
+  const now = Date.now();
+  let userCooldowns = commandCooldowns.get(commandName);
+  if (!userCooldowns) {
+    userCooldowns = new Map();
+    commandCooldowns.set(commandName, userCooldowns);
+  }
+  const lastUsed = userCooldowns.get(message.author.id) || 0;
+  if (now - lastUsed < cooldownTime) {
+    const timeLeft = Math.ceil((cooldownTime - (now - lastUsed)) / 1000);
+    return handleError(message, `Please wait ${timeLeft} seconds before using this command again.`);
+  }
+
   try {
     await command(message, args);
+    userCooldowns.set(message.author.id, now);
   } catch (error) {
     logWithTime(`Error executing command ${commandName}: ${error}`);
     handleError(message, 'An error occurred while executing the command.');
