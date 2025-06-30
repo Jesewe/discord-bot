@@ -14,8 +14,7 @@ let token;
 let prefix;
 let loggingEnabled = false;
 let logFilePath = './bot.log';
-let enableClearCommand = true;
-let enableJokeCommand = true;
+let commandConfig = {};
 let bannedWords = [];
 let bannedWordsPattern;
 
@@ -25,8 +24,42 @@ try {
   prefix = config.prefix || '!';
   loggingEnabled = config.logging?.enabled;
   logFilePath = config.logging?.logFilePath || logFilePath;
-  enableClearCommand = config.commands?.enableClearCommand !== false;
-  enableJokeCommand = config.commands?.enableJokeCommand !== false;
+  commandConfig = {
+    enableClearCommand: config.commands?.enableClearCommand !== false,
+    enableJokeCommand: config.commands?.enableJokeCommand !== false,
+    enableRollCommand: config.commands?.enableRollCommand !== false,
+    enableUserinfoCommand: config.commands?.enableUserinfoCommand !== false,
+    enableServerinfoCommand: config.commands?.enableServerinfoCommand !== false,
+    enablePingCommand: config.commands?.enablePingCommand !== false,
+    enableWordsCommand: config.commands?.enableWordsCommand !== false,
+    enableWhoCommand: config.commands?.enableWhoCommand !== false,
+    enablePredictionCommand: config.commands?.enablePredictionCommand !== false,
+    enable8ballCommand: config.commands?.enable8ballCommand !== false,
+    enableKickCommand: config.commands?.enableKickCommand !== false,
+    enableBanCommand: config.commands?.enableBanCommand !== false,
+    enableRandomPlayerCommand: config.commands?.enableRandomPlayerCommand !== false,
+    enableUptimeCommand: config.commands?.enableUptimeCommand !== false,
+    enableTodayCommand: config.commands?.enableTodayCommand !== false,
+    enableFactCommand: config.commands?.enableFactCommand !== false,
+    enableMuteCommand: config.commands?.enableMuteCommand !== false,
+    enableUnmuteCommand: config.commands?.enableUnmuteCommand !== false,
+    enableBotinfoCommand: config.commands?.enableBotinfoCommand !== false,
+    enableFortuneCommand: config.commands?.enableFortuneCommand !== false,
+    enableAsciiCommand: config.commands?.enableAsciiCommand !== false,
+    enableHelpCommand: config.commands?.enableHelpCommand !== false,
+    enableQuoteCommand: config.commands?.enableQuoteCommand !== false,
+    enableTimerCommand: config.commands?.enableTimerCommand !== false,
+    enableCryptoCommand: config.commands?.enableCryptoCommand !== false,
+    enableAvatarCommand: config.commands?.enableAvatarCommand !== false,
+    enableCustomembedCommand: config.commands?.enableCustomembedCommand !== false,
+    enableCatCommand: config.commands?.enableCatCommand !== false,
+    enableDogCommand: config.commands?.enableDogCommand !== false,
+    enableMemeCommand: config.commands?.enableMemeCommand !== false,
+    enableWeatherCommand: config.commands?.enableWeatherCommand !== false,
+    enableTriviaCommand: config.commands?.enableTriviaCommand !== false,
+    enableReminderCommand: config.commands?.enableReminderCommand !== false,
+    enablePollCommand: config.commands?.enablePollCommand !== false,
+  };
   bannedWords = config.autoModeration?.bannedWords || [];
   if (bannedWords.length > 0) {
     bannedWordsPattern = new RegExp('\\b(' + bannedWords.join('|') + ')\\b', 'i');
@@ -58,6 +91,7 @@ const handleError = async (message, errorMessage) => {
 // Command Handlers (all commands are defined here)
 const commands = {
   roll: async (message, args) => {
+    if (!commandConfig.enableRollCommand) return handleError(message, 'This command is disabled.');
     let min = 1, max = 100;
     if (args.length > 0) {
       const range = args[0].split('-');
@@ -74,7 +108,7 @@ const commands = {
   },
 
   joke: async (message) => {
-    if (!enableJokeCommand) return handleError(message, 'This command is disabled.');
+    if (!commandConfig.enableJokeCommand) return handleError(message, 'This command is disabled.');
     try {
       const response = await axios.get('https://official-joke-api.appspot.com/random_joke');
       const joke = response.data;
@@ -89,7 +123,7 @@ const commands = {
   },
 
   clear: async (message, args) => {
-    if (!enableClearCommand) return handleError(message, 'This command is disabled.');
+    if (!commandConfig.enableClearCommand) return handleError(message, 'This command is disabled.');
     const deleteCount = parseInt(args[0], 10);
     if (!deleteCount || deleteCount < 1 || deleteCount > 100) {
       return handleError(message, 'Please provide a number between 1 and 100 for the number of messages to delete.');
@@ -104,6 +138,7 @@ const commands = {
   },
 
   userinfo: async (message) => {
+    if (!commandConfig.enableUserinfoCommand) return handleError(message, 'This command is disabled.');
     const target = message.mentions.users.first() || message.author;
     if (!message.guild) {
       const userInfoEmbed = new EmbedBuilder()
@@ -143,6 +178,7 @@ const commands = {
   },
 
   serverinfo: async (message) => {
+    if (!commandConfig.enableServerinfoCommand) return handleError(message, 'This command is disabled.');
     const serverInfoEmbed = new EmbedBuilder()
       .setColor(0x00FF99)
       .setTitle('Server Information')
@@ -156,6 +192,7 @@ const commands = {
   },
 
   ping: async (message) => {
+    if (!commandConfig.enablePingCommand) return handleError(message, 'This command is disabled.');
     const pingEmbed = new EmbedBuilder()
       .setColor(0x00FFFF)
       .setTitle('🏓 Ping')
@@ -164,12 +201,14 @@ const commands = {
   },
 
   words: async (message, args) => {
+    if (!commandConfig.enableWordsCommand) return handleError(message, 'This command is disabled.');
     const text = args.join(' ');
     const wordCount = text.split(/\s+/).filter(Boolean).length;
     await message.channel.send(`Word count: ${wordCount}`);
   },
 
   who: async (message, args) => {
+    if (!commandConfig.enableWhoCommand) return handleError(message, 'This command is disabled.');
     const name = args[0] || 'Someone';
     const adjectives = ['funny', 'smart', 'brave', 'creative', 'curious'];
     const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
@@ -177,6 +216,7 @@ const commands = {
   },
 
   prediction: async (message) => {
+    if (!commandConfig.enablePredictionCommand) return handleError(message, 'This command is disabled.');
     const predictions = [
       'Great success is coming!',
       'Be cautious today.',
@@ -188,12 +228,14 @@ const commands = {
   },
 
   '8ball': async (message) => {
+    if (!commandConfig.enable8ballCommand) return handleError(message, 'This command is disabled.');
     const responses = ['Yes', 'No', 'Maybe', 'Absolutely', 'Certainly not'];
     const randomResponse = responses[Math.floor(Math.random() * responses.length)];
     await message.channel.send(randomResponse);
   },
 
   kick: async (message) => {
+    if (!commandConfig.enableKickCommand) return handleError(message, 'This command is disabled.');
     if (!message.member.permissions.has(PermissionsBitField.Flags.KickMembers)) {
       return handleError(message, 'You do not have permission to kick members.');
     }
@@ -214,6 +256,7 @@ const commands = {
   },
 
   ban: async (message) => {
+    if (!commandConfig.enableBanCommand) return handleError(message, 'This command is disabled.');
     if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers)) {
       return handleError(message, 'You do not have permission to ban members.');
     }
@@ -234,6 +277,7 @@ const commands = {
   },
 
   random_player: async (message) => {
+    if (!commandConfig.enableRandomPlayerCommand) return handleError(message, 'This command is disabled.');
     const members = message.guild.members.cache.filter(member => !member.user.bot).map(member => member.user);
     if (members.length === 0) return handleError(message, 'No non-bot members found.');
     const randomMember = members[Math.floor(Math.random() * members.length)];
@@ -241,6 +285,7 @@ const commands = {
   },
 
   uptime: async (message) => {
+    if (!commandConfig.enableUptimeCommand) return handleError(message, 'This command is disabled.');
     const uptimeSeconds = client.uptime / 1000;
     const minutes = Math.floor(uptimeSeconds / 60);
     const seconds = Math.floor(uptimeSeconds % 60);
@@ -248,6 +293,7 @@ const commands = {
   },
 
   today: async (message) => {
+    if (!commandConfig.enableTodayCommand) return handleError(message, 'This command is disabled.');
     try {
       const todayResponse = await axios.get('https://history.muffinlabs.com/date');
       const todayData = todayResponse.data.data.Events[0];
@@ -262,6 +308,7 @@ const commands = {
   },
 
   fact: async (message) => {
+    if (!commandConfig.enableFactCommand) return handleError(message, 'This command is disabled.');
     try {
       const factResponse = await axios.get('https://uselessfacts.jsph.pl/random.json?language=en');
       const fact = factResponse.data;
@@ -272,6 +319,7 @@ const commands = {
   },
 
   mute: async (message) => {
+    if (!commandConfig.enableMuteCommand) return handleError(message, 'This command is disabled.');
     if (!message.member.permissions.has(PermissionsBitField.Flags.MuteMembers)) {
       return handleError(message, 'You do not have permission to mute members.');
     }
@@ -287,6 +335,7 @@ const commands = {
   },
 
   unmute: async (message) => {
+    if (!commandConfig.enableUnmuteCommand) return handleError(message, 'This command is disabled.');
     if (!message.member.permissions.has(PermissionsBitField.Flags.MuteMembers)) {
       return handleError(message, 'You do not have permission to unmute members.');
     }
@@ -302,6 +351,7 @@ const commands = {
   },
 
   botinfo: async (message) => {
+    if (!commandConfig.enableBotinfoCommand) return handleError(message, 'This command is disabled.');
     const bots = message.guild.members.cache.filter(member => member.user.bot);
     let botInfo = `🤖 Bots on this server:\n`;
     bots.forEach(bot => botInfo += `${bot.user.tag}\n`);
@@ -309,6 +359,7 @@ const commands = {
   },
 
   fortune: async (message) => {
+    if (!commandConfig.enableFortuneCommand) return handleError(message, 'This command is disabled.');
     const fortunes = [
       'You will have a great day!',
       'Be careful today.',
@@ -320,6 +371,7 @@ const commands = {
   },
 
   ascii: async (message, args) => {
+    if (!commandConfig.enableAsciiCommand) return handleError(message, 'This command is disabled.');
     const text = args.join(' ');
     if (!text) return handleError(message, 'Please provide some text for ASCII conversion.');
     figlet(text, (err, data) => {
@@ -331,46 +383,56 @@ const commands = {
   },
 
   help: async (message) => {
+    if (!commandConfig.enableHelpCommand) return handleError(message, 'This command is disabled.');
+    const commandDescriptions = {
+      roll: `**${prefix}roll [min-max]** - Roll a random number between min and max.`,
+      joke: `**${prefix}joke** - Get a random joke.`,
+      clear: `**${prefix}clear [number]** - Clear a specified number of messages.`,
+      userinfo: `**${prefix}userinfo [@user]** - Get information about a user.`,
+      serverinfo: `**${prefix}serverinfo** - Get information about the server.`,
+      ping: `**${prefix}ping** - Check the bot's latency.`,
+      words: `**${prefix}words [text]** - Count the number of words in a text.`,
+      who: `**${prefix}who [name]** - Describe a person with a random adjective.`,
+      prediction: `**${prefix}prediction** - Get a random prediction.`,
+      '8ball': `**${prefix}8ball** - Get a Yes/No answer.`,
+      kick: `**${prefix}kick [@user]** - Kick a user from the server.`,
+      ban: `**${prefix}ban [@user]** - Ban a user from the server.`,
+      random_player: `**${prefix}random_player** - Choose a random user.`,
+      uptime: `**${prefix}uptime** - Find out how long the bot has been online.`,
+      today: `**${prefix}today** - Find out what happened today in history.`,
+      fact: `**${prefix}fact** - Get a random fact.`,
+      mute: `**${prefix}mute [@user]** - Mute a user in voice channels.`,
+      unmute: `**${prefix}unmute [@user]** - Unmute a user in voice channels.`,
+      botinfo: `**${prefix}botinfo** - Get information on the bots in the server.`,
+      fortune: `**${prefix}fortune** - Get your fortune for today.`,
+      ascii: `**${prefix}ascii [text]** - Convert text to ASCII art.`,
+      quote: `**${prefix}quote** - Get an inspirational quote.`,
+      timer: `**${prefix}timer [seconds]** - Set a timer.`,
+      crypto: `**${prefix}crypto [coin]** - Get the current price of a cryptocurrency.`,
+      avatar: `**${prefix}avatar [@user]** - Get the avatar of a user.`,
+      customembed: `**${prefix}customembed Title; Description; [optional hex color]** - Create a custom embed message.`,
+      cat: `**${prefix}cat** - Get a random cat image.`,
+      dog: `**${prefix}dog** - Get a random dog image.`,
+      meme: `**${prefix}meme** - Fetch a random meme.`,
+      weather: `**${prefix}weather [location]** - Get current weather information for a location.`,
+      trivia: `**${prefix}trivia** - Get a random trivia question.`,
+      reminder: `**${prefix}reminder [seconds] [message]** - Set a personal reminder.`,
+      poll: `**${prefix}poll Question | Option1 | Option2 | ...** - Create a poll with up to 10 options.`,
+    };
+    // Filter enabled commands
+    const enabledCommands = Object.keys(commands)
+      .filter(cmd => commandConfig[`enable${cmd.charAt(0).toUpperCase() + cmd.slice(1)}Command`])
+      .map(cmd => commandDescriptions[cmd])
+      .join('\n');
     const helpEmbed = new EmbedBuilder()
       .setColor(0x00FF99)
       .setTitle('Help - Available Commands')
-      .setDescription(`Here's a list of available commands:
-**${prefix}roll [min-max]** - Roll a random number between min and max.
-**${prefix}joke** - Get a random joke.
-**${prefix}who [name]** - Describe a person with a random adjective.
-**${prefix}prediction** - Get a random prediction.
-**${prefix}8ball** - Get a Yes/No answer.
-**${prefix}ping** - Check the bot's latency.
-**${prefix}words [text]** - Count the number of words in a text.
-**${prefix}clear [number]** - Clear a specified number of messages.
-**${prefix}userinfo [@user]** - Get information about a user.
-**${prefix}serverinfo** - Get information about the server.
-**${prefix}random_player** - Choose a random user.
-**${prefix}uptime** - Find out how long the bot has been online.
-**${prefix}today** - Find out what happened today in history.
-**${prefix}fact** - Get a random fact.
-**${prefix}mute [@user]** - Mute a user in voice channels.
-**${prefix}unmute [@user]** - Unmute a user in voice channels.
-**${prefix}botinfo** - Get information on the bots in the server.
-**${prefix}fortune** - Get your fortune for today.
-**${prefix}ascii [text]** - Convert text to ASCII art.
-**${prefix}quote** - Get an inspirational quote.
-**${prefix}timer [seconds]** - Set a timer.
-**${prefix}crypto [coin]** - Get the current price of a cryptocurrency.
-**${prefix}avatar [@user]** - Get the avatar of a user.
-**${prefix}customembed Title; Description; [optional hex color]** - Create a custom embed message.
-**${prefix}cat** - Get a random cat image.
-**${prefix}dog** - Get a random dog image.
-**${prefix}meme** - Fetch a random meme.
-**${prefix}weather [location]** - Get current weather information for a location.
-**${prefix}trivia** - Get a random trivia question.
-**${prefix}reminder [seconds] [message]** - Set a personal reminder.
-**${prefix}poll Question | Option1 | Option2 | ...** - Create a poll with up to 10 options.
-`);
+      .setDescription(`Here's a list of available commands:\n${enabledCommands || 'No commands are currently enabled.'}`);
     await message.channel.send({ embeds: [helpEmbed] });
   },
 
   quote: async (message) => {
+    if (!commandConfig.enableQuoteCommand) return handleError(message, 'This command is disabled.');
     try {
       const response = await axios.get('https://zenquotes.io/api/random');
       const data = response.data;
@@ -390,6 +452,7 @@ const commands = {
   },
 
   timer: async (message, args) => {
+    if (!commandConfig.enableTimerCommand) return handleError(message, 'This command is disabled.');
     const seconds = parseInt(args[0], 10);
     if (isNaN(seconds) || seconds <= 0) {
       return handleError(message, 'Please provide a valid number of seconds for the timer.');
@@ -401,6 +464,7 @@ const commands = {
   },
 
   crypto: async (message, args) => {
+    if (!commandConfig.enableCryptoCommand) return handleError(message, 'This command is disabled.');
     const coin = args[0] ? args[0].toLowerCase() : 'bitcoin';
     try {
       const response = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${coin}&vs_currencies=usd`);
@@ -420,6 +484,7 @@ const commands = {
   },
 
   avatar: async (message) => {
+    if (!commandConfig.enableAvatarCommand) return handleError(message, 'This command is disabled.');
     const target = message.mentions.users.first() || message.author;
     const avatarEmbed = new EmbedBuilder()
       .setColor(0x00BFFF)
@@ -428,9 +493,8 @@ const commands = {
     await message.channel.send({ embeds: [avatarEmbed] });
   },
 
-  // New Feature: Custom Embed Message
   customembed: async (message, args) => {
-    // Expecting input in the format: Title; Description; [optional hex color]
+    if (!commandConfig.enableCustomembedCommand) return handleError(message, 'This command is disabled.');
     if (args.length === 0) {
       return handleError(message, 'Please provide your embed content in the format: `Title; Description; [optional hex color]`.');
     }
@@ -441,10 +505,8 @@ const commands = {
     }
     const title = parts[0].trim();
     const description = parts[1].trim();
-    // Default color (green) if not provided
     let color = 0x00FF00;
     if (parts[2]) {
-      // Remove '#' if present and parse the hex color
       color = parseInt(parts[2].trim().replace(/^#/, ''), 16) || color;
     }
     const embed = new EmbedBuilder()
@@ -455,6 +517,7 @@ const commands = {
   },
 
   cat: async (message) => {
+    if (!commandConfig.enableCatCommand) return handleError(message, 'This command is disabled.');
     try {
       const response = await axios.get('https://aws.random.cat/meow');
       const imageUrl = response.data.file;
@@ -469,6 +532,7 @@ const commands = {
   },
 
   dog: async (message) => {
+    if (!commandConfig.enableDogCommand) return handleError(message, 'This command is disabled.');
     try {
       const response = await axios.get('https://dog.ceo/api/breeds/image/random');
       const imageUrl = response.data.message;
@@ -483,6 +547,7 @@ const commands = {
   },
 
   meme: async (message) => {
+    if (!commandConfig.enableMemeCommand) return handleError(message, 'This command is disabled.');
     try {
       const response = await axios.get('https://meme-api.com/gimme');
       const memeData = response.data;
@@ -498,7 +563,8 @@ const commands = {
   },
 
   weather: async (message, args) => {
-    if (args.length === Zero) return handleError(message, 'Please provide a location for weather information.');
+    if (!commandConfig.enableWeatherCommand) return handleError(message, 'This command is disabled.');
+    if (args.length === 0) return handleError(message, 'Please provide a location for weather information.');
     const location = args.join(' ');
     try {
       const response = await axios.get(`http://wttr.in/${encodeURIComponent(location)}?format=j1`);
@@ -519,13 +585,13 @@ const commands = {
   },
 
   trivia: async (message) => {
+    if (!commandConfig.enableTriviaCommand) return handleError(message, 'This command is disabled.');
     try {
       const response = await axios.get('https://opentdb.com/api.php?amount=1&type=multiple');
       const triviaData = response.data.results[0];
       const question = triviaData.question;
       const correctAnswer = triviaData.correct_answer;
       const incorrectAnswers = triviaData.incorrect_answers;
-      // Shuffle answers
       const answers = [...incorrectAnswers, correctAnswer].sort(() => Math.random() - 0.5);
       const triviaEmbed = new EmbedBuilder()
         .setColor(0x32CD32)
@@ -542,6 +608,7 @@ const commands = {
   },
 
   reminder: async (message, args) => {
+    if (!commandConfig.enableReminderCommand) return handleError(message, 'This command is disabled.');
     const seconds = parseInt(args[0], 10);
     if (isNaN(seconds) || seconds <= 0) {
       return handleError(message, 'Please provide a valid number of seconds for the reminder.');
@@ -554,8 +621,8 @@ const commands = {
     }, seconds * 1000);
   },
 
-  // New Command: poll
   poll: async (message, args) => {
+    if (!commandConfig.enablePollCommand) return handleError(message, 'This command is disabled.');
     const fullArgs = message.content.slice(prefix.length + 'poll'.length).trim();
     const parts = fullArgs.split('|').map(part => part.trim());
     if (parts.length < 2) {
@@ -571,7 +638,7 @@ const commands = {
       .setTitle('Poll')
       .setDescription(question);
     options.forEach((option, index) => {
-      const emoji = String.fromCodePoint(0x1F1E6 + index); // 🇦 to 🇿
+      const emoji = String.fromCodePoint(0x1F1E6 + index);
       pollEmbed.addFields({ name: emoji, value: option, inline: true });
     });
     const pollMessage = await message.channel.send({ embeds: [pollEmbed] });
